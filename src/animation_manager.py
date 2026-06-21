@@ -29,8 +29,8 @@ class AnimationManager(QObject):
         self.timer.timeout.connect(self.update_frame)
         
         self.load_assets()
-        # Set animation speed to 40ms (25 FPS) untuk 24 frame yang sangat smooth
-        self.timer.start(40)
+        # Set animation speed to 80ms (12.5 FPS) yang merupakan standar animasi 2D yang pas di mata
+        self.timer.start(230)
         
     def load_assets(self):
         """Loads PNG assets for each state into memory."""
@@ -54,15 +54,26 @@ class AnimationManager(QObject):
         if new_state in self.frames and self.current_state != new_state:
             self.current_state = new_state
             self.current_frame_index = 0
+            self.animation_direction = 1
             
     def update_frame(self):
         state_frames = self.frames[self.current_state]
         if not state_frames:
             return
             
-        # Karena Anda membuat 24 frame (animasi utuh), kita kembali gunakan putaran normal
-        # agar animasinya berputar dari frame 1 ke 24 lalu kembali ke 1.
-        self.current_frame_index = (self.current_frame_index + 1) % len(state_frames)
+        if len(state_frames) == 1:
+            self.current_frame_index = 0
+        else:
+            direction = getattr(self, "animation_direction", 1)
+            self.current_frame_index += direction
+            
+            # Memakai efek Ping-Pong: agar perputaran dari frame 24 ke frame 1 tidak patah / melompat drastis (yang bikin terlihat aneh)
+            if self.current_frame_index >= len(state_frames) - 1:
+                self.current_frame_index = len(state_frames) - 1
+                self.animation_direction = -1
+            elif self.current_frame_index <= 0:
+                self.current_frame_index = 0
+                self.animation_direction = 1
                 
         pixmap = state_frames[self.current_frame_index]
         self.frame_updated.emit(pixmap)
